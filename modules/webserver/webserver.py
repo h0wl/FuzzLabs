@@ -1,28 +1,25 @@
-# =============================================================================
-# WebServer
-# =============================================================================
-
-import cgi
+import re
 import json
 import time
-import threading
-import psutil
 import syslog
-import httplib
-import BaseHTTPServer
+import psutil
+import threading
+from functools import wraps
+from flask import request
+from flask import make_response
+from flask import Flask, make_response
 from pydispatch import dispatcher
 from classes import Event as ev
 
-__author__     = "Zsolt Imre"
-__license__    = "GPLv2"
-__version__    = "2.0.0"
-__maintainer__ = "Zsolt Imre"
-__email__      = "imrexzsolt@gmail.com"
-__status__     = "Development"
+__version__ = "2.1.0"
 
-jobs_status = ""
-archives_status = ""
-issues_list = ""
+# -----------------------------------------------------------------------------
+#
+# -----------------------------------------------------------------------------
+
+whitelist = {}
+whitelist["job_id"]   = '^[a-f0-9]{32}$'
+whitelist["datetime"] = '^[0-9]{4}-[0-9]{1,2}-[0-9]{1,2} [0-9]{1,2}:[0-9]{1,2}:[0-9]{1,2}$'
 
 # =============================================================================
 #
@@ -109,9 +106,17 @@ class jobs_status_collector(threading.Thread):
     #
     # -------------------------------------------------------------------------
 
+    def get(self):
+        global jobs_status
+        return jobs_status
+
+    # -------------------------------------------------------------------------
+    #
+    # -------------------------------------------------------------------------
+
     def run(self):
-        syslog.syslog(syslog.LOG_INFO, "jobs status collector started") 
-        dispatcher.connect(self.__handle_rsp_jobs_list, 
+        syslog.syslog(syslog.LOG_INFO, "jobs status collector started")
+        dispatcher.connect(self.__handle_rsp_jobs_list,
                            signal=ev.Event.EVENT__RSP_JOBS_LIST,
                            sender=dispatcher.Any)
         while True:
@@ -123,51 +128,6 @@ class jobs_status_collector(threading.Thread):
                               "failed to send job list request event (%s)" %
                               str(ex))
             time.sleep(3)
-
-# =============================================================================
-#
-# =============================================================================
-
-class issues_status_collector(threading.Thread):
-
-    # -------------------------------------------------------------------------
-    #
-    # -------------------------------------------------------------------------
-
-    def __init__(self, config):
-        threading.Thread.__init__(self)
-        self.config = config
-
-    # -------------------------------------------------------------------------
-    #
-    # -------------------------------------------------------------------------
-
-    def __handle_rsp_issues_list(self, sender, data = ""):
-        global issues_list
-        issues_list = data
-
-        if self.config['general']['debug'] >= 1:
-            syslog.syslog(syslog.LOG_INFO, "issues list received: %s" %
-                          str(issues_list))
-
-    # -------------------------------------------------------------------------
-    #
-    # -------------------------------------------------------------------------
-
-    def run(self):
-        syslog.syslog(syslog.LOG_INFO, "issues status collector started") 
-        dispatcher.connect(self.__handle_rsp_issues_list,
-                           signal=ev.Event.EVENT__RSP_ISSUES_LIST,
-                           sender=dispatcher.Any)
-        while True:
-            try:
-                dispatcher.send(signal=ev.Event.EVENT__REQ_ISSUES_LIST,
-                                sender="WEBSERVER")
-            except Exception, ex:
-                syslog.syslog(syslog.LOG_ERR,
-                              "failed to send issues list request event (%s)" %
-                              str(ex))
-            time.sleep(5)
 
 # =============================================================================
 #
@@ -199,8 +159,16 @@ class archives_collector(threading.Thread):
     #
     # -------------------------------------------------------------------------
 
+    def get(self):
+        global archives_status
+        return archives_status
+
+    # -------------------------------------------------------------------------
+    #
+    # -------------------------------------------------------------------------
+
     def run(self):
-        syslog.syslog(syslog.LOG_INFO, "archives status collector started") 
+        syslog.syslog(syslog.LOG_INFO, "archives status collector started")
         dispatcher.connect(self.__handle_rsp_archives_list,
                            signal=ev.Event.EVENT__RSP_ARCHIVES_LIST,
                            sender=dispatcher.Any)
@@ -218,230 +186,102 @@ class archives_collector(threading.Thread):
 #
 # =============================================================================
 
-class web_interface_handler (BaseHTTPServer.BaseHTTPRequestHandler):
-    def __init__(self, request, client_address, server):
-        self.server = server
-        BaseHTTPServer.BaseHTTPRequestHandler.__init__(self, request, 
-                                                       client_address, server)
+class Response:
 
-    # -------------------------------------------------------------------------
-    #
-    # -------------------------------------------------------------------------
+    def __init__(self, status = None, message = None, data = None):
+        self.status  = status
+        self.message = message
+        self.data    = data
 
-    def unsupported_method (self):
-        self.send_response(405)
-        self.send_header('Allow', 'GET, POST')
-        self.send_header('Content-type', 'application/json')
-        self.send_header('Access-Control-Allow-Origin', '*')
-        self.end_headers()
-        self.wfile.write("{}")
+    def get(self):
+        rv = {}
+        if self.status: rv["status"] = self.status
+        if self.message: rv["message"] = self.message
+        if self.data: rv["data"] = self.data
+        return json.dumps(rv)
 
-    # -------------------------------------------------------------------------
-    #
-    # -------------------------------------------------------------------------
-
-    def do_GET (self):
-        self.do_everything()
-
-    # -------------------------------------------------------------------------
-    #
-    # -------------------------------------------------------------------------
-
-    def do_HEAD (self):
-        self.unsupported_method()
-
-    # -------------------------------------------------------------------------
-    #
-    # -------------------------------------------------------------------------
-
-    def do_POST (self):
-        self.do_everything()
-
-    # -------------------------------------------------------------------------
-    #
-    # -------------------------------------------------------------------------
-
-    def do_OPTIONS (self):
-        self.send_response(200)
-        self.send_header('Allow', 'GET, POST')
-        self.send_header('Content-type', 'application/json')
-        self.send_header('Access-Control-Allow-Origin', '*')
-        self.send_header('Access-Control-Allow-Headers',
-                         'origin, content-type, accept')
-        self.end_headers()
-        self.wfile.write("{}")
-
-    # -------------------------------------------------------------------------
-    #
-    # -------------------------------------------------------------------------
-
-    def unauthenticated(self):
-        self.send_response(200)
-        self.send_header('Content-type', 'application/json')
-        self.send_header('Access-Control-Allow-Origin', '*')
-        self.end_headers()
-        uarsp = {"error": "authreq"}
-        self.wfile.write(json.dumps(uarsp))
-
-    # -------------------------------------------------------------------------
-    #
-    # -------------------------------------------------------------------------
-
-    def check_auth(self, config, postvars):
-        if not "secret" in config["general"]:
-            return True
-        if not "secret" in postvars:
-            return False
-        if str(config["general"]["secret"]) == str(postvars["secret"]):
-            return True
-        syslog.syslog(syslog.LOG_ERR,
-                      "Authentication failed for client from %s:%s" %
-                      (self.client_address[0], self.client_address[1]))
-        return False
-
-    # -------------------------------------------------------------------------
-    #
-    # -------------------------------------------------------------------------
-
-    def get_post_data(self):
-        ctype, pdict = cgi.parse_header(self.headers.getheader('Content-Type'))
-        if ctype == 'application/json':
-            length = int(self.headers.getheader('Content-Length'))
-            if length > 0:
-                postvars = json.loads(self.rfile.read(length))
-            else:
-                postvars = {}
-        else:
-            postvars = {}
-        return postvars
-
-    # -------------------------------------------------------------------------
-    #
-    # -------------------------------------------------------------------------
-
-    def do_everything (self):
-        post_data = {}
-        response = {}
-        if self.command == "POST":
-            post_data = self.get_post_data()
-        
-        if not self.check_auth(self.server.config, post_data):
-            self.unauthenticated()
-            return
-
-        uri_items = self.path.split("/")
-
-        self.send_response(200)
-        self.send_header('Content-type', 'application/json')
-        self.send_header('Access-Control-Allow-Origin', '*')
-
-        if uri_items[1] == "status":
-            response = self.view_status()
-        elif uri_items[1] == "issues":
-            response = self.view_issues()
-        elif uri_items[1] == "system":
-            response = json.dumps(system_stats().get_stats_summary())
-        elif uri_items[1] == "jobs":
-            if uri_items[2] == "pause":
-                syslog.syslog(syslog.LOG_INFO,
-                              "pause request received for job %s" %
-                              str(uri_items[3]))
-                dispatcher.send(signal=ev.Event.EVENT__REQ_JOB_PAUSE, 
-                                sender="WEBSERVER", 
-                                data=str(uri_items[3]))
-            elif uri_items[2] == "resume":
-                syslog.syslog(syslog.LOG_INFO,
-                              "resume request received for job %s" %
-                              str(uri_items[3]))
-                dispatcher.send(signal=ev.Event.EVENT__REQ_JOB_RESUME, 
-                                sender="WEBSERVER",
-                                data=str(uri_items[3]))
-            elif uri_items[2] == "delete":
-                syslog.syslog(syslog.LOG_INFO, 
-                              "delete request received for job %s" %
-                              str(uri_items[3]))
-                dispatcher.send(signal=ev.Event.EVENT__REQ_JOB_DELETE,
-                                sender="WEBSERVER",
-                                data=str(uri_items[3]))
-        elif uri_items[1] == "archives":
-            if len(uri_items) < 3:
-                response = self.view_archives()
-            elif uri_items[2] == "start":
-                syslog.syslog(syslog.LOG_INFO,
-                              "archived job start request for job %s" %
-                              str(uri_items[3]))
-                dispatcher.send(signal=ev.Event.EVENT__REQ_ARCHIVES_START,
-                                sender="WEBSERVER",
-                                data=str(uri_items[3]))
-            elif uri_items[2] == "restart":
-                syslog.syslog(syslog.LOG_INFO,
-                              "archived job restart request for job %s" %
-                              str(uri_items[3]))
-                dispatcher.send(signal=ev.Event.EVENT__REQ_ARCHIVES_RESTART,
-                                sender="WEBSERVER",
-                                data=str(uri_items[3]))
-            elif uri_items[2] == "delete":
-                syslog.syslog(syslog.LOG_INFO,
-                              "archived job delete received for job %s" %
-                              str(uri_items[3]))
-                dispatcher.send(signal=ev.Event.EVENT__REQ_ARCHIVES_DELETE,
-                                sender="WEBSERVER",
-                                data=str(uri_items[3]))
-        else:
-            response = "{}"
-
-        self.end_headers()
-        self.wfile.write(response)
-
-    # -------------------------------------------------------------------------
-    #
-    # -------------------------------------------------------------------------
-
-    def version_string (self):
-        return "DCNWS"
-
-    # -------------------------------------------------------------------------
-    #
-    # -------------------------------------------------------------------------
-
-    def view_archives (self):
-        global archives_status
-        return archives_status
-
-    # -------------------------------------------------------------------------
-    #
-    # -------------------------------------------------------------------------
-
-    def view_issues (self):
-        global issues_list
-        return issues_list
-
-    # -------------------------------------------------------------------------
-    #
-    # -------------------------------------------------------------------------
-
-    def view_status (self):
-        global jobs_status
-        return jobs_status
-
-# =============================================================================
+# -----------------------------------------------------------------------------
 #
-# =============================================================================
+# -----------------------------------------------------------------------------
 
-class web_interface_server (BaseHTTPServer.HTTPServer):
-    '''
-    http://docs.python.org/lib/module-BaseHTTPServer.html
-    '''
+def do_validate(type, value):
+    global whitelist
+    if not re.match(whitelist[type], value): return False
+    return True
 
-    def __init__(self, server_address, RequestHandlerClass):
-        BaseHTTPServer.HTTPServer.__init__(self, server_address,
-                                           RequestHandlerClass)
+# -----------------------------------------------------------------------------
+#
+# -----------------------------------------------------------------------------
+
+def validate(f):
+    @wraps(f)
+    def validate_input(**kwargs):
+        global whitelist
+        url_vars = []
+        for p in kwargs: url_vars.append(p)
+        for key in url_vars:
+            if whitelist.get(key):
+                if not do_validate(key, kwargs[key]):
+                    r = Response("error", "invalid data").get()
+                    return make_response(r, 400)
+        url_params = request.args.items()
+        if len(url_params) > 0:
+            for key, value in url_params:
+                if key not in whitelist: continue
+                if not do_validate(key, value):
+                    r = Response("error", "invalid data").get()
+                    return make_response(r, 400)
+        if request.method == "POST":
+            # Not checking data in JSON here just if the JSON is valid.
+            try:
+                data = request.get_json()
+            except Exception, ex:
+                r = Response("error", "invalid data").get()
+                return make_response(r, 400)
+        return f(**kwargs)
+    return validate_input
+
+# -----------------------------------------------------------------------------
+#
+# -----------------------------------------------------------------------------
+
+def add_response_headers(headers={}):
+    """This decorator adds the headers passed in to the response"""
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            resp = make_response(f(*args, **kwargs))
+            h = resp.headers
+            for header, value in headers.items():
+                h[header] = value
+            return resp
+        return decorated_function
+    return decorator
+
+# -----------------------------------------------------------------------------
+#
+# -----------------------------------------------------------------------------
+
+def apiheaders(f):
+    @wraps(f)
+    @add_response_headers({'Server': 'dcnws'})
+    @add_response_headers({'Content-Type': 'application/json'})
+    @add_response_headers({'Access-Control-Allow-Origin': '*'})
+    @add_response_headers({'Access-Control-Allow-Headers': 'origin, content-type, accept'})
+    @add_response_headers({'Cache-Control': 'no-cache, no-store, must-revalidate'})
+    @add_response_headers({'Pragma': 'no-cache'})
+    @add_response_headers({'Expires': '0'})
+    def decorated_function(*args, **kwargs):
+        return f(*args, **kwargs)
+    return decorated_function
 
 # =============================================================================
 #
 # =============================================================================
 
 class webserver(threading.Thread):
+
+    app = Flask(__name__)
 
     # -------------------------------------------------------------------------
     #
@@ -467,7 +307,6 @@ class webserver(threading.Thread):
         self.server = None
         self.jobs_collector = None
         self.archives_collector = None
-        self.issues_collector = None
 
         syslog.openlog(logoption=syslog.LOG_PID, facility=syslog.LOG_DAEMON)
 
@@ -482,13 +321,6 @@ class webserver(threading.Thread):
     #
     # -------------------------------------------------------------------------
 
-    def __handle_event(self, sender, data):
-        pass
-
-    # -------------------------------------------------------------------------
-    #
-    # -------------------------------------------------------------------------
-
     def is_running(self):
         return self.running
 
@@ -498,15 +330,201 @@ class webserver(threading.Thread):
 
     def stop(self):
         self.running = False
+        syslog.syslog(syslog.LOG_INFO, 'webserver stopped')
+
+    # -------------------------------------------------------------------------
+    #
+    # -------------------------------------------------------------------------
+
+    @app.route("/", methods=['GET'])
+    @apiheaders
+    @validate
+    def root():
+        return json.dumps({})
+
+    # -------------------------------------------------------------------------
+    #
+    # -------------------------------------------------------------------------
+
+    @app.route("/jobs", methods=['GET'])
+    @apiheaders
+    @validate
+    def r_jobs_queue():
+        global jobs_status
+        r = Response("success", "jobs", json.loads(jobs_status)).get()
+        return r
+
+    # -------------------------------------------------------------------------
+    #
+    # -------------------------------------------------------------------------
+
+    @app.route("/jobs/archive", methods=['GET'])
+    @apiheaders
+    @validate
+    def r_jobs_archive():
+        global archives_status
+        r = Response("success", "jobs", json.loads(archives_status)).get()
+        return r
+
+
+    # -------------------------------------------------------------------------
+    #
+    # -------------------------------------------------------------------------
+
+    @app.route("/jobs/<job_id>/delete", methods=['GET'])
+    @apiheaders
+    @validate
+    def r_jobs_delete(job_id):
+        syslog.syslog(syslog.LOG_INFO,
+                      "delete request received for job: %s" % job_id)
+        dispatcher.send(signal=ev.Event.EVENT__REQ_JOB_DELETE,
+                        sender="WEBSERVER",
+                        data=job_id)
+        r = Response("success", "deleted").get()
+        return r
+
+    # -------------------------------------------------------------------------
+    #
+    # -------------------------------------------------------------------------
+
+    @app.route("/jobs/<job_id>/trash", methods=['GET'])
+    @apiheaders
+    @validate
+    def r_jobs_trash(job_id):
+        syslog.syslog(syslog.LOG_INFO,
+                      "trash request received for job: %s" % job_id)
+        dispatcher.send(signal=ev.Event.EVENT__REQ_ARCHIVES_DELETE,
+                        sender="WEBSERVER",
+                        data=job_id)
+        r = Response("success", "trashed").get()
+        return r
+
+    # -------------------------------------------------------------------------
+    #
+    # -------------------------------------------------------------------------
+
+    @app.route("/jobs/<job_id>/start", methods=['GET'])
+    @apiheaders
+    @validate
+    def r_jobs_start(job_id):
+        syslog.syslog(syslog.LOG_INFO,
+                      "start request received for job: %s" % job_id)
+        dispatcher.send(signal=ev.Event.EVENT__REQ_ARCHIVES_START,
+                        sender="WEBSERVER",
+                        data=job_id)
+        r = Response("success", "started").get()
+        return r
+
+    # -------------------------------------------------------------------------
+    #
+    # -------------------------------------------------------------------------
+
+    @app.route("/jobs/<job_id>/restart", methods=['GET'])
+    @apiheaders
+    @validate
+    def r_jobs_restart(job_id):
+        syslog.syslog(syslog.LOG_INFO,
+                      "restart request received for job: %s" % job_id)
+        dispatcher.send(signal=ev.Event.EVENT__REQ_ARCHIVES_RESTART,
+                        sender="WEBSERVER",
+                        data=job_id)
+        r = Response("success", "restarted").get()
+        return r
+
+    # -------------------------------------------------------------------------
+    #
+    # -------------------------------------------------------------------------
+
+    @app.route("/jobs/<job_id>/pause", methods=['GET'])
+    @apiheaders
+    @validate
+    def r_jobs_pause(job_id):
+        syslog.syslog(syslog.LOG_INFO,
+                      "pause request received for job: %s" % job_id)
+        dispatcher.send(signal=ev.Event.EVENT__REQ_JOB_PAUSE, 
+                        sender="WEBSERVER", 
+                        data=job_id)
+        r = Response("success", "paused").get()
+        return r
+
+    # -------------------------------------------------------------------------
+    #
+    # -------------------------------------------------------------------------
+
+    @app.route("/jobs/<job_id>/resume", methods=['GET'])
+    @apiheaders
+    @validate
+    def r_jobs_resume(job_id):
+        syslog.syslog(syslog.LOG_INFO,
+                      "resume request received for job: %s" % job_id)
+        dispatcher.send(signal=ev.Event.EVENT__REQ_JOB_RESUME,
+                        sender="WEBSERVER",
+                        data=job_id)
+        r = Response("success", "resumed").get()
+        return r
+
+    # -------------------------------------------------------------------------
+    #
+    # -------------------------------------------------------------------------
+
+    @app.route("/engine/shutdown", methods=['GET'])
+    @apiheaders
+    @validate
+    def r_engine_shutdown():
+        # TBD
+        r = Response("error", "not supported").get()
+        return r
+
+    # -------------------------------------------------------------------------
+    #
+    # -------------------------------------------------------------------------
+
+    @app.route("/engine/status", methods=['GET'])
+    @apiheaders
+    @validate
+    def r_engine_status():
+        return json.dumps({})
+
+    # -------------------------------------------------------------------------
+    #
+    # -------------------------------------------------------------------------
+
+    @app.route("/engine/logs", methods=['GET'])
+    @apiheaders
+    @validate
+    def r_engine_logs():
+        # TBD
+        r = Response("error", "not supported").get()
+        return r
+
+    # -------------------------------------------------------------------------
+    #
+    # -------------------------------------------------------------------------
+
+    @app.route("/engine/logs/<datetime>", methods=['GET'])
+    @apiheaders
+    @validate
+    def r_engine_logs_from(datetime):
+        # TBD
+        r = Response("error", "not supported").get()
+        return r
+
+    # -------------------------------------------------------------------------
+    #
+    # -------------------------------------------------------------------------
+
+    @app.route('/', defaults={'path': ''})
+    @app.route('/<path:path>')
+    @apiheaders
+    def catch_all(path):
+        r = Response("error", "invalid data").get()
+        return make_response(r, 400)
 
     # -------------------------------------------------------------------------
     #
     # -------------------------------------------------------------------------
 
     def run(self):
-        syslog.syslog(syslog.LOG_INFO, 'webserver thread is accepting data')
-        dispatcher.connect(self.__handle_event, signal=ev.Event.EVENT_GENERAL, 
-                           sender=dispatcher.Any)
         try:
             self.jobs_collector = jobs_status_collector(self.config)
             self.jobs_collector.start()
@@ -522,28 +540,8 @@ class webserver(threading.Thread):
             syslog.syslog(syslog.LOG_ERR,
                           'failed to start archives collector (%s)' % str(ex))
 
-        try:
-            self.issues_collector = issues_status_collector(self.config)
-            self.issues_collector.start()
-        except Exception, ex:
-            syslog.syslog(syslog.LOG_ERR,
-                          'failed to start issues status collector (%s)' %
-                          str(ex))
-
-        self.server = web_interface_server(('', 26000), web_interface_handler)
-        self.server.config = self.config
-        while self.running:
-            self.server.handle_request()
-        syslog.syslog(syslog.LOG_INFO, 'webserver shutting down')
-
-    # -------------------------------------------------------------------------
-    #
-    # -------------------------------------------------------------------------
-
-    def join(self, timeout=None):
-        # A little dirty but no other solution afaik
-        self._stopevent.set()
-        conn = httplib.HTTPConnection("localhost:%d" % 26000)
-        conn.request("GET", "/")
-        conn.getresponse()
+        syslog.syslog(syslog.LOG_INFO, 'webserver thread is accepting data')
+        self.app.run(host=self.config['api']['listen_address'],
+                     port=self.config['api']['listen_port'],
+                     debug=False)
 

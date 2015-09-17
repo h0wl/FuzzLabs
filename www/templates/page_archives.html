@@ -12,7 +12,7 @@
             </tr>
         </thead>
         <tbody id="tbody_jobs_list">
-            <tr ng-repeat="job in archives | filter:query">
+            <tr ng-repeat="job in archives.data | filter:query">
                 <td ng-show="job.job.name">{{job.job.name}}</td>
                 <td ng-show="!job.job.name">{{job.id}}</td>
                 <td>

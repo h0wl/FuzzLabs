@@ -289,14 +289,14 @@ fuzzlabsApp.factory('JobsService', ['$interval', '$http', function($interval, $h
             return(null);
         }
         if (c_engine.password.length > 0) {
-            $http.post('http://' + c_engine.address + '/status', {'secret': c_engine.password}).
+            $http.post('http://' + c_engine.address + '/jobs', {'secret': c_engine.password}).
             then(function(response) {
                 jobs = response.data;
             }, function(response) {
                 jobs = null;
             });
         } else {
-            $http.get('http://' + c_engine.address + '/status').
+            $http.get('http://' + c_engine.address + '/jobs').
             then(function(response) {
                 jobs = response.data;
             }, function(response) {
@@ -308,27 +308,27 @@ fuzzlabsApp.factory('JobsService', ['$interval', '$http', function($interval, $h
     factory.delete_job = function(job_id) {
         var c_engine = factory.get_current_engine_cons();
         if (c_engine.password.length > 0) {
-            $http.post('http://' + c_engine.address + '/jobs/delete/' + job_id, {'secret': c_engine.password})
+            $http.post('http://' + c_engine.address + '/jobs/' + job_id + '/delete', {'secret': c_engine.password})
         } else {
-            $http.get('http://' + c_engine.address + '/jobs/delete/' + job_id);
+            $http.get('http://' + c_engine.address + '/jobs/' + job_id + '/delete');
         }
     }
 
     factory.pause_job = function(job_id) {
         var c_engine = factory.get_current_engine_cons();
         if (c_engine.password.length > 0) {
-            $http.post('http://' + c_engine.address + '/jobs/pause/' + job_id, {'secret': c_engine.password})
+            $http.post('http://' + c_engine.address + '/jobs/' + job_id + '/pause', {'secret': c_engine.password})
         } else {
-            $http.get('http://' + c_engine.address + '/jobs/pause/' + job_id);
+            $http.get('http://' + c_engine.address + '/jobs/' + job_id + '/pause');
         }
     }
 
     factory.start_job = function(job_id) {
         var c_engine = factory.get_current_engine_cons();
         if (c_engine.password.length > 0) {
-            $http.post('http://' + c_engine.address + '/jobs/resume/' + job_id, {'secret': c_engine.password})
+            $http.post('http://' + c_engine.address + '/jobs/' + job_id + '/resume', {'secret': c_engine.password})
         } else {
-            $http.get('http://' + c_engine.address + '/jobs/resume/' + job_id);
+            $http.get('http://' + c_engine.address + '/jobs/' + job_id + '/resume');
         }
     }
 
@@ -366,14 +366,14 @@ fuzzlabsApp.factory('ArchivesService', ['$interval', '$http', function($interval
             return(null);
         }
         if (c_engine.password.length > 0) {
-            $http.post('http://' + c_engine.address + '/archives', {'secret': c_engine.password}).
+            $http.post('http://' + c_engine.address + '/jobs/archive', {'secret': c_engine.password}).
             then(function(response) {
                 archives = response.data;
             }, function(response) {
                 archives = null;
             });
         } else {
-            $http.get('http://' + c_engine.address + '/archives').
+            $http.get('http://' + c_engine.address + '/jobs/archive').
             then(function(response) {
                 archives = response.data;
             }, function(response) {
@@ -385,27 +385,27 @@ fuzzlabsApp.factory('ArchivesService', ['$interval', '$http', function($interval
     factory.delete_job = function(job_id) {
         var c_engine = factory.get_current_engine_cons();
         if (c_engine.password.length > 0) {
-            $http.post('http://' + c_engine.address + '/archives/delete/' + job_id, {'secret': c_engine.password})
+            $http.post('http://' + c_engine.address + '/jobs/' + job_id + '/trash', {'secret': c_engine.password})
         } else {
-            $http.get('http://' + c_engine.address + '/archives/delete/' + job_id);
+            $http.get('http://' + c_engine.address + '/jobs/' + job_id + '/trash');
         }
     }
 
     factory.restart_job = function(job_id) {
         var c_engine = factory.get_current_engine_cons();
         if (c_engine.password.length > 0) {
-            $http.post('http://' + c_engine.address + '/archives/restart/' + job_id, {'secret': c_engine.password})
+            $http.post('http://' + c_engine.address + '/jobs/' + job_id + '/restart', {'secret': c_engine.password})
         } else {
-            $http.get('http://' + c_engine.address + '/archives/restart/' + job_id);
+            $http.get('http://' + c_engine.address + '/jobs/' + job_id + '/restart');
         }
     }
 
     factory.start_job = function(job_id) {
         var c_engine = factory.get_current_engine_cons();
         if (c_engine.password.length > 0) {
-            $http.post('http://' + c_engine.address + '/archives/start/' + job_id, {'secret': c_engine.password})
+            $http.post('http://' + c_engine.address + '/jobs/' + job_id + '/start', {'secret': c_engine.password})
         } else {
-            $http.get('http://' + c_engine.address + '/archives/start/' + job_id);
+            $http.get('http://' + c_engine.address + '/jobs/' + job_id + '/start');
         }
     }
 
@@ -415,7 +415,7 @@ fuzzlabsApp.factory('ArchivesService', ['$interval', '$http', function($interval
 
     $interval(function() {
         factory.fetch_archives();
-    }, 7000);
+    }, 5000);
 
     return(factory);
 }]);

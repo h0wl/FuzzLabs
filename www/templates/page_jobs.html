@@ -17,9 +17,9 @@
             </tr>
         </thead>
         <tbody id="tbody_jobs_list">
-            <tr ng-repeat="job in jobs | filter:query">
-                <td ng-show="job.data.name">{{job.data.name}}</td>
-                <td ng-show="!job.data.name">{{job.id}}</td>
+            <tr ng-repeat="job in jobs.data | filter:query">
+                <td ng-show="job.name">{{job.data.name}}</td>
+                <td ng-show="!job.name">{{job.id}}</td>
                 <td>
                     <table>
                         <tr ng-repeat="(key, value) in job.data.target.transport">
