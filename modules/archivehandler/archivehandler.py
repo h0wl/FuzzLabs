@@ -155,10 +155,7 @@ class archivehandler(threading.Thread):
                 if e_file[1] == "job" or e_file[1] == "jlock":
                     job_details["job"] = self.load_job_data(l_path)
                 if e_file[1] == "session":
-                    job_details["status"] = self.load_job_data(l_path)
-                if e_file[1] == "crashes":
-                    # Deal with this later...
-                    pass
+                    job_details["session"] = self.load_job_data(l_path)
 
             if job_details["id"] == "" or \
                job_details["job"] == "" or \

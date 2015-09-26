@@ -240,17 +240,14 @@ class session (pgraph.graph):
 
         s_data = {"id": self.session_id,
                   "name": current_name,
-                  "media": self.media,
-                  "protocol": self.proto,
                   "state": state,
                   "state_reason": self.state_reason,
                   "crashes": self.crash_count,
                   "warnings": self.warning_count,
-                  "progress": {
-                      "progress": progress_total,
-                      "total_mutant_index": self.total_mutant_index,
-                      "num_mutations": self.total_num_mutations
-                  }}
+                  "progress": progress_total,
+                  "total_mutant_index": self.total_mutant_index,
+                  "total_num_mutations": self.total_num_mutations
+                  }
 
         return(s_data)
 

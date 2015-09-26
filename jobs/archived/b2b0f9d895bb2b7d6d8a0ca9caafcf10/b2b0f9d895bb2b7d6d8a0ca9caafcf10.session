@@ -1,0 +1,1 @@
+{"restart_sleep_time": 0, "crash_threshold": 3, "crashes": 0, "proto": "tcp", "skip": 2240, "warnings": 0, "restart_interval": 0, "total_mutant_index": 2240, "session_filename": "b2b0f9d895bb2b7d6d8a0ca9caafcf10.session", "total_num_mutations": 37916, "timeout": 10, "pause_flag": 0, "sleep_time": 0}

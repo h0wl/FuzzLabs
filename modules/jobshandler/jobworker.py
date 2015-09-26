@@ -108,15 +108,17 @@ class jobworker():
             self.job_status = {}
             return {}
 
-        self.job_status.update({"path": self.job_path, 
-                                "data": self.job_data
-                               })
+        data = {
+            "id": self.job_id,
+            "job": self.job_data,
+            "session": self.job_status
+        }
 
         self.p_queue.put({
                           "to": self.parent,
                           "from": self.id,
                           "command": "job_status",
-                          "data": self.job_status
+                          "data": data
                          })
         self.job_status = {}
 

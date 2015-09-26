@@ -180,41 +180,6 @@ class ModuleHandler():
     #
     # -------------------------------------------------------------------------
 
-    def update_modules(self):
-        """
-        Reload modules which have been modified. 
-        """
-
-        for module in self.loaded_modules:
-            modtime = os.path.getmtime(self.modules_dir + "/" + \
-                                       module["name"]) * 1000000
-            if module["mtime"] != modtime:
-                syslog.syslog(syslog.LOG_WARNING,
-                              'module ' + module["name"] + \
-                              ' changed, reloading')
-
-                self.unload_module(module)
-
-                if self.is_module_loaded(module["name"]):
-                    syslog.syslog(syslog.LOG_ERR,
-                                  "failed to reload module: %s" %
-                                  module["name"])
-                    continue
-
-                self.load_module(module)
-
-        l_mod_list = []
-        for module in self.loaded_modules:
-            l_mod_list.append(module['name'])
-
-        for module_name in self.get_directories():
-            if module_name not in l_mod_list:
-                self.load_module(module_name)
-
-    # -------------------------------------------------------------------------
-    #
-    # -------------------------------------------------------------------------
-
     def __load_module_by_name(self, name):
         """
         Load a module specified by its name.

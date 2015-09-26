@@ -80,13 +80,7 @@ class FuzzlabsDaemon():
                           'failed to load modules (%s)' % str(ex))
 
         while self.running:
-            time.sleep(5)
-            try:
-                self.modules.update_modules()
-            except Exception, ex: 
-                syslog.syslog(syslog.LOG_ERR,
-                              'failed to check module updates %s' % str(ex))
-                raise ex
+            time.sleep(2)
 
         try:
             self.modules.unload_modules()

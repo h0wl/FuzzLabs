@@ -1,4 +1,5 @@
 import re
+import os
 import json
 import time
 import syslog
@@ -12,6 +13,8 @@ from pydispatch import dispatcher
 from classes import Event as ev
 
 __version__ = "2.1.0"
+
+fuzzlabs_root = None
 
 # -----------------------------------------------------------------------------
 #
@@ -275,6 +278,30 @@ def apiheaders(f):
         return f(*args, **kwargs)
     return decorated_function
 
+# -----------------------------------------------------------------------------
+#
+# -----------------------------------------------------------------------------
+
+def is_job_archived(job_id):
+    global fuzzlabs_root
+    a_dir = fuzzlabs_root + "/jobs/archived/" + job_id
+
+    if os.path.exists(a_dir):
+        return True
+    return False
+
+# -----------------------------------------------------------------------------
+#
+# -----------------------------------------------------------------------------
+
+def is_job_queued(job_id):
+    global fuzzlabs_root
+    q_dir = fuzzlabs_root + "/jobs/queue/" + job_id
+
+    if os.path.exists(q_dir):
+        return True
+    return False
+
 # =============================================================================
 #
 # =============================================================================
@@ -300,7 +327,8 @@ class webserver(threading.Thread):
 
     def __init__(self, root, config):
         threading.Thread.__init__(self)
-        self.root = root
+        global fuzzlabs_root
+        self.root = fuzzlabs_root = root
         self.config = config
         self.setDaemon(True)
         self.running = True
@@ -371,7 +399,7 @@ class webserver(threading.Thread):
     #
     # -------------------------------------------------------------------------
 
-    @app.route("/jobs/<job_id>/delete", methods=['GET'])
+    @app.route("/jobs/<job_id>/stop", methods=['GET'])
     @apiheaders
     @validate
     def r_jobs_delete(job_id):
@@ -380,14 +408,14 @@ class webserver(threading.Thread):
         dispatcher.send(signal=ev.Event.EVENT__REQ_JOB_DELETE,
                         sender="WEBSERVER",
                         data=job_id)
-        r = Response("success", "deleted").get()
+        r = Response("success", "stopped").get()
         return r
 
     # -------------------------------------------------------------------------
     #
     # -------------------------------------------------------------------------
 
-    @app.route("/jobs/<job_id>/trash", methods=['GET'])
+    @app.route("/jobs/<job_id>/delete", methods=['GET'])
     @apiheaders
     @validate
     def r_jobs_trash(job_id):
@@ -396,23 +424,7 @@ class webserver(threading.Thread):
         dispatcher.send(signal=ev.Event.EVENT__REQ_ARCHIVES_DELETE,
                         sender="WEBSERVER",
                         data=job_id)
-        r = Response("success", "trashed").get()
-        return r
-
-    # -------------------------------------------------------------------------
-    #
-    # -------------------------------------------------------------------------
-
-    @app.route("/jobs/<job_id>/start", methods=['GET'])
-    @apiheaders
-    @validate
-    def r_jobs_start(job_id):
-        syslog.syslog(syslog.LOG_INFO,
-                      "start request received for job: %s" % job_id)
-        dispatcher.send(signal=ev.Event.EVENT__REQ_ARCHIVES_START,
-                        sender="WEBSERVER",
-                        data=job_id)
-        r = Response("success", "started").get()
+        r = Response("success", "deleted").get()
         return r
 
     # -------------------------------------------------------------------------
@@ -451,17 +463,30 @@ class webserver(threading.Thread):
     #
     # -------------------------------------------------------------------------
 
-    @app.route("/jobs/<job_id>/resume", methods=['GET'])
+    @app.route("/jobs/<job_id>/start", methods=['GET'])
     @apiheaders
     @validate
-    def r_jobs_resume(job_id):
+    def r_jobs_start(job_id):
+
         syslog.syslog(syslog.LOG_INFO,
-                      "resume request received for job: %s" % job_id)
-        dispatcher.send(signal=ev.Event.EVENT__REQ_JOB_RESUME,
-                        sender="WEBSERVER",
-                        data=job_id)
-        r = Response("success", "resumed").get()
+                      "start request received for job: %s" % job_id)
+
+        if is_job_archived(job_id):
+            syslog.syslog(syslog.LOG_INFO,
+                          "starting archived job: %s" % job_id)
+            dispatcher.send(signal=ev.Event.EVENT__REQ_ARCHIVES_START,
+                            sender="WEBSERVER",
+                            data=job_id)
+        else:
+            syslog.syslog(syslog.LOG_INFO,
+                          "resuming job: %s" % job_id)
+            dispatcher.send(signal=ev.Event.EVENT__REQ_JOB_RESUME,
+                            sender="WEBSERVER",
+                            data=job_id)
+
+        r = Response("success", "started").get()
         return r
+
 
     # -------------------------------------------------------------------------
     #
