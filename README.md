@@ -1,6 +1,6 @@
 # FuzzLabs
 
-FuzzLabs is a modular fuzzing framework which uses Sulley as it's core fuzzing engine.
+FuzzLabs is a modular fuzzing framework which uses a modified version of Sulley as it's core fuzzing engine.
 For more information please refer to the Wiki.
 
 Website: fuzzlabs.dcnws.com
