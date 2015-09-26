@@ -8,6 +8,3 @@ pip install Flask
 # For development
 # apt-get install git pylint pychecker valgrind 
 
-# For future functionalities
-# apt-get install redis-server python-redis
-

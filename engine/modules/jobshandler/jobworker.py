@@ -265,8 +265,8 @@ class jobworker():
 
         r_folder = self.root + "/requests"
         if r_folder not in sys.path: sys.path.insert(0, r_folder)
-        descriptor = __import__(self.job_data['request']['request_file'])
         global descriptor
+        descriptor = __import__(self.job_data['request']['request_file'])
 
 
     # -------------------------------------------------------------------------

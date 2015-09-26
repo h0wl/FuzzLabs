@@ -1,6 +1,6 @@
 #!/bin/bash
 
-./fuzzlabs.py stop
+./engine/fuzzlabs.py stop
 sleep 2
 find ./ -name "*.pyc" -type f -exec rm {} \;
 find ./jobs/ -name "*.crash*" -type f -exec rm {} \;
