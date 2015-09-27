@@ -487,49 +487,6 @@ class webserver(threading.Thread):
     #
     # -------------------------------------------------------------------------
 
-    @app.route("/issues", methods=['GET'])
-    @apiheaders
-    @validate
-    def r_issues_get():
-        """
-        Return a list of issue (crashes/warning) IDs and the ID of the job
-        that found the issue. 
-        """
-        r = Response("success", "issues").get()
-        return r
-
-    # -------------------------------------------------------------------------
-    #
-    # -------------------------------------------------------------------------
-
-    @app.route("/issues/<id>", methods=['GET'])
-    @apiheaders
-    @validate
-    def r_issues_get_by_id(id):
-        """
-        Return full data of an issue identified by id.
-        """
-        r = Response("success", "issue").get()
-        return r
-
-    # -------------------------------------------------------------------------
-    # 
-    # -------------------------------------------------------------------------
-    
-    @app.route("/issues/<id>/delete", methods=['GET'])
-    @apiheaders
-    @validate
-    def r_issues_get_by_id(id):
-        """
-        Delete an issue identified by id.
-        """
-        r = Response("success", "deleted").get()
-        return r
-
-    # -------------------------------------------------------------------------
-    #
-    # -------------------------------------------------------------------------
-
     @app.route("/engine/shutdown", methods=['GET'])
     @apiheaders
     @validate

@@ -22,7 +22,6 @@ if __name__ == "__main__":
                     os.path.abspath(
                         inspect.getfile(inspect.currentframe()
                     )))
-
     try:
         CONFIG = ch.ConfigurationHandler(ROOT_DIR + "/etc/engine.config")
     except Exception, ex:

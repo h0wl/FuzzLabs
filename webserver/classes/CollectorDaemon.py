@@ -97,9 +97,9 @@ class CollectorDaemon():
 
         syslog.syslog(syslog.LOG_INFO, 'FuzzLabs collector is running')
 
-        engine = create_engine('sqlite:///' + self.root +\
+        db_engine = create_engine('sqlite:///' + self.root +\
                                '/etc/database/webserver.db', echo=False)
-        Session = sessionmaker(bind = engine)
+        Session = sessionmaker(bind = db_engine)
         db = Session()
         db_queue = Queue(self.config["general"]["database_queue_size"])
 
@@ -109,6 +109,7 @@ class CollectorDaemon():
         while self.running:
             engines = db.query(Engine).filter(Engine.active == 1)
             for engine in engines:
+                syslog.syslog(syslog.LOG_INFO, "Active engine: " + str(engine.name))
                 if self.has_thread(engine):
                     continue
 

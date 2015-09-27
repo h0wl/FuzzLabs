@@ -62,9 +62,13 @@ class FuzzlabsDaemon():
 
         syslog.syslog(syslog.LOG_INFO, 'DCNWS FuzzLabs is initializing')
 
-        os.setsid()
-        os.umask(077)
-        signal.signal(signal.SIGTERM, self.__sigterm_handler)
+        try:
+            os.setsid()
+            os.umask(077)
+            signal.signal(signal.SIGTERM, self.__sigterm_handler) 
+        except Exception, ex:
+            syslog.syslog(syslog.LOG_ERR, 
+                          'failed to start daemon (%s)' % str(ex))
 
         try:
             self.modules = mh.ModuleHandler(self.root, self.config)

@@ -391,14 +391,22 @@ def api_engine():
 def api_engine_delete(id):
     try:
         engine = Engine.query.filter(Engine.id == id).first()
-        db.session.delete(engine)
-        db.session.commit()
+        if engine:
+            db.session.delete(engine)
+            db.session.commit()
     except Exception, ex:
         syslog.syslog(syslog.LOG_WARNING,
                       "failed to remove engine, user %s: %s" %\
                       (current_user.username, request.remote_addr))
         r = Response("error", "Failed to remove engine.").get()
         return r
+
+    # If engine removed, delete all related jobs from the database.
+    job = db.session.query(Job).filter(
+                        Job.engine_id == id
+                        ).delete()
+    db.session.commit()
+
     syslog.syslog(syslog.LOG_INFO,
                   "engine sucessfully removed by user %s: %s" %\
                   (current_user.username, request.remote_addr))
@@ -462,21 +470,26 @@ def api_engine_jobs():
 @validate
 @api_authenticated
 def delete_job(engine_id, job_id):
-    engine = Engine.query.filter((Engine.id == engine_id) & (Engine.active == 1)).first()
-    r_data = do_get(engine.address,
-                    engine.port,
-                    "/jobs/" + job_id + "/delete",
-                    engine.secret)
-    if not r_data:
-        r = Response("error", "Failed to delete job.").get()
-        return r
-    if not r_data.get('status') or r_data.get('status') == "error":
-        r = Response("error", "Failed to delete job.").get()
-        return r
+    engine = Engine.query.get(engine_id)
+    if engine:
+        r_data = do_get(engine.address,
+                        engine.port,
+                        "/jobs/" + job_id + "/delete",
+                        engine.secret)
+        if not r_data:
+            r = Response("error", "Failed to delete job.").get()
+            return r
+        if not r_data.get('status') or r_data.get('status') == "error":
+            r = Response("error", "Failed to delete job.").get()
+            return r
 
-    job = Job.query.filter((Job.engine_id == engine_id) & (Job.job_id == job_id)).first()
-    db.session.delete(job)
-    db.session.commit()
+    job = db.session.query(Job).filter(
+                        (Job.engine_id == engine_id) &\
+                        (Job.job_id == job_id)
+                        ).first()
+    if job:
+        db.session.delete(job)
+        db.session.commit()
 
     r = Response("success", "deleted").get()
     return r
@@ -490,7 +503,10 @@ def delete_job(engine_id, job_id):
 @validate
 @api_authenticated
 def pause_job(engine_id, job_id):
-    engine = Engine.query.filter((Engine.id == engine_id) & (Engine.active == 1)).first()
+    engine = Engine.query.get(engine_id)
+    if not engine:
+        r = Response("error", "Failed to pause job: engine does not exist.").get()
+        return r
     r_data = do_get(engine.address,
                     engine.port,
                     "/jobs/" + job_id + "/pause",
@@ -513,7 +529,10 @@ def pause_job(engine_id, job_id):
 @validate
 @api_authenticated
 def resume_job(engine_id, job_id):
-    engine = Engine.query.filter((Engine.id == engine_id) & (Engine.active == 1)).first()
+    engine = Engine.query.get(engine_id)
+    if not engine:
+        r = Response("error", "Failed to start job: engine does not exist.").get()
+        return r
     r_data = do_get(engine.address,
                     engine.port,
                     "/jobs/" + job_id + "/start",
@@ -536,7 +555,10 @@ def resume_job(engine_id, job_id):
 @validate
 @api_authenticated
 def restart_job(engine_id, job_id):
-    engine = Engine.query.filter((Engine.id == engine_id) & (Engine.active == 1)).first()
+    engine = Engine.query.get(engine_id)
+    if not engine:
+        r = Response("error", "Failed to restart job: engine does not exist.").get()
+        return r
     r_data = do_get(engine.address,
                     engine.port,
                     "/jobs/" + job_id + "/restart",
@@ -559,7 +581,10 @@ def restart_job(engine_id, job_id):
 @validate
 @api_authenticated
 def stop_job(engine_id, job_id):
-    engine = Engine.query.filter((Engine.id == engine_id) & (Engine.active == 1)).first()
+    engine = Engine.query.get(engine_id)
+    if not engine:
+        r = Response("error", "Failed to stop job: engine does not exist.").get()
+        return r
     r_data = do_get(engine.address,
                     engine.port,
                     "/jobs/" + job_id + "/stop",
