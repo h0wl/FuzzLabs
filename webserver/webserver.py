@@ -390,7 +390,7 @@ def api_engine():
 @api_authenticated
 def api_engine_delete(id):
     try:
-        engine = Engine.query.filter_by(id = id).filter_by(owner = current_user.username).first()
+        engine = Engine.query.filter_by(id = id).first()
         db.session.delete(engine)
         db.session.commit()
     except Exception, ex:
@@ -403,6 +403,32 @@ def api_engine_delete(id):
                   "engine sucessfully removed by user %s: %s" %\
                   (current_user.username, request.remote_addr))
     r = Response("success", "Engine removed.").get()
+    return r
+
+# -----------------------------------------------------------------------------
+#
+# -----------------------------------------------------------------------------
+
+@app.route("/api/engine/<id>/activate", methods=['GET'])
+@api_headers
+@validate
+@api_authenticated
+def api_engine_activate(id):
+    try:
+        engine = Engine.query.filter_by(id = id).first()
+        engine.active = 1
+        db.session.add(engine)
+        db.session.commit()
+    except Exception, ex:
+        syslog.syslog(syslog.LOG_WARNING,
+                      "failed to activate engine, user %s: %s" %\
+                      (current_user.username, request.remote_addr))
+        r = Response("error", "Failed to activate engine.").get()
+        return r
+    syslog.syslog(syslog.LOG_INFO,
+                  "engine activated by user %s: %s" %\
+                  (current_user.username, request.remote_addr))
+    r = Response("success", "Engine activated.").get()
     return r
 
 # -----------------------------------------------------------------------------

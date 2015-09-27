@@ -147,6 +147,15 @@ fuzzlabsApp.factory('EnginesService', function($interval, $http) {
         });
     }
 
+    factory.activateEngine = function(e_id) {
+        $http.get('/api/engine/' + e_id + '/activate').
+        then(function(response) {
+            alert(response.data.message)
+        }, function(response) {
+            alert("Failed to activate engine.")
+        });
+    }
+
     factory.validate_engine_name = function(value) {
         return /[a-zA-Z0-9\-\_\.]{1,128}/.test(value);
     }
@@ -272,6 +281,11 @@ fuzzlabsApp.controller('enginesCtrl', ['$state', '$scope', '$interval', 'Engines
     $(document).on("click", "button#delete_engine", function() {
         var e_name = $(this).attr('engine');
         EnginesService.deleteEngine(e_name);
+    });
+
+    $(document).on("click", "button#activate_engine", function() {
+        var e_name = $(this).attr('engine');
+        EnginesService.activateEngine(e_name);
     });
 
     $(document).on("click", "button#set_active_engine", function() {
