@@ -95,10 +95,15 @@
                         <!-- STARTED or STOPPED -->
                         <button class="job_action" title="Start Job" engine="{{job.engine}}" job_id="{{job.id}}" id="start_job">&#x25B6;</button>
                     </div>
-                    <div ng-if="!job.session.state" id="job_action">
+                    <div ng-if="job.session != '' && !job.session.state" id="job_action">
                         <!-- STARTED, RESTARTED or DELETED -->
                         <button class="job_action" title="Start Job" engine="{{job.engine}}" job_id="{{job.id}}" id="start_job">&#x25B6;</button>
                         <button class="job_action" title="Restart Job" engine="{{job.engine}}" job_id="{{job.id}}" id="restart_job">&#x27F3;</button>
+                        <button class="job_action" title="Delete Job" engine="{{job.engine}}" job_id="{{job.id}}" id="delete_job">&#x2718;</button>
+                    </div>
+                    <div ng-if="job.session == ''" id="job_action">
+                        <!-- STARTED or DELETED -->
+                        <button class="job_action" title="Start Job" engine="{{job.engine}}" job_id="{{job.id}}" id="start_job">&#x25B6;</button>
                         <button class="job_action" title="Delete Job" engine="{{job.engine}}" job_id="{{job.id}}" id="delete_job">&#x2718;</button>
                     </div>
                 </td>

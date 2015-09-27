@@ -7,13 +7,6 @@ import syslog
 
 from classes import ModuleHandler as mh
 
-__author__     = "Zsolt Imre"
-__license__    = "GPLv2"
-__version__    = "2.0.0"
-__maintainer__ = "Zsolt Imre"
-__email__      = "imrexzsolt@gmail.com"
-__status__     = "Development"
-
 class FuzzlabsDaemon():
     """
     Implement the FuzzLabs daemon which loads up modules and keeps track of
@@ -80,7 +73,7 @@ class FuzzlabsDaemon():
                           'failed to load modules (%s)' % str(ex))
 
         while self.running:
-            time.sleep(2)
+            time.sleep(1)
 
         try:
             self.modules.unload_modules()

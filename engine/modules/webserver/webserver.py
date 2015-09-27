@@ -269,11 +269,6 @@ def apiheaders(f):
     @wraps(f)
     @add_response_headers({'Server': 'dcnws'})
     @add_response_headers({'Content-Type': 'application/json'})
-    @add_response_headers({'Access-Control-Allow-Origin': '*'})
-    @add_response_headers({'Access-Control-Allow-Headers': 'origin, content-type, accept'})
-    @add_response_headers({'Cache-Control': 'no-cache, no-store, must-revalidate'})
-    @add_response_headers({'Pragma': 'no-cache'})
-    @add_response_headers({'Expires': '0'})
     def decorated_function(*args, **kwargs):
         return f(*args, **kwargs)
     return decorated_function

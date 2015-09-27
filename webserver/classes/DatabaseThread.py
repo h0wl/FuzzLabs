@@ -113,6 +113,13 @@ class DatabaseThread(threading.Thread):
     #
     # -------------------------------------------------------------------------
 
+    def stop(self):
+        self.running = False
+
+    # -------------------------------------------------------------------------
+    #
+    # -------------------------------------------------------------------------
+
     def run(self):
         syslog.syslog(syslog.LOG_INFO, 'FuzzLabs collector DB thread is running')
 

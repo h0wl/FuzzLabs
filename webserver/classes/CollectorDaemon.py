@@ -1,3 +1,4 @@
+import os
 import time
 import signal
 import syslog
@@ -90,14 +91,20 @@ class CollectorDaemon():
     # -------------------------------------------------------------------------
 
     def run(self):
+        os.setsid()
+        os.umask(077)
+        signal.signal(signal.SIGTERM, self.__sigterm_handler)
+
         syslog.syslog(syslog.LOG_INFO, 'FuzzLabs collector is running')
+
         engine = create_engine('sqlite:///' + self.root +\
                                '/etc/database/webserver.db', echo=False)
         Session = sessionmaker(bind = engine)
         db = Session()
         db_queue = Queue(self.config["general"]["database_queue_size"])
 
-        dt.DatabaseThread(self.root, self.config, db_queue).start()
+        dbt = dt.DatabaseThread(self.root, self.config, db_queue)
+        dbt.start()
 
         while self.running:
             engines = db.query(Engine).filter(Engine.active == 1)
@@ -116,4 +123,10 @@ class CollectorDaemon():
                 })
                 e_thread.start()
             time.sleep(self.config["general"]["engine_check_interval"])
+
+        syslog.syslog(syslog.LOG_INFO, 'shutting down database thread')
+
+        dbt.stop()
+
+        syslog.syslog(syslog.LOG_INFO, 'FuzzLabs collector has stopped')
 
