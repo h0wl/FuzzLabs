@@ -390,7 +390,7 @@ def api_engine():
 @api_authenticated
 def api_engine_delete(id):
     try:
-        engine = Engine.query.filter_by(id = id).first()
+        engine = Engine.query.filter(Engine.id == id).first()
         db.session.delete(engine)
         db.session.commit()
     except Exception, ex:
@@ -415,7 +415,7 @@ def api_engine_delete(id):
 @api_authenticated
 def api_engine_activate(id):
     try:
-        engine = Engine.query.filter_by(id = id).first()
+        engine = Engine.query.filter(Engine.id == id).first()
         engine.active = 1
         db.session.add(engine)
         db.session.commit()
@@ -462,7 +462,7 @@ def api_engine_jobs():
 @validate
 @api_authenticated
 def delete_job(engine_id, job_id):
-    engine = Engine.query.get(engine_id)
+    engine = Engine.query.filter((Engine.id == engine_id) & (Engine.active == 1)).first()
     r_data = do_get(engine.address,
                     engine.port,
                     "/jobs/" + job_id + "/delete",
@@ -490,7 +490,7 @@ def delete_job(engine_id, job_id):
 @validate
 @api_authenticated
 def pause_job(engine_id, job_id):
-    engine = Engine.query.get(engine_id)
+    engine = Engine.query.filter((Engine.id == engine_id) & (Engine.active == 1)).first()
     r_data = do_get(engine.address,
                     engine.port,
                     "/jobs/" + job_id + "/pause",
@@ -513,7 +513,7 @@ def pause_job(engine_id, job_id):
 @validate
 @api_authenticated
 def resume_job(engine_id, job_id):
-    engine = Engine.query.get(engine_id)
+    engine = Engine.query.filter((Engine.id == engine_id) & (Engine.active == 1)).first()
     r_data = do_get(engine.address,
                     engine.port,
                     "/jobs/" + job_id + "/start",
@@ -536,7 +536,7 @@ def resume_job(engine_id, job_id):
 @validate
 @api_authenticated
 def restart_job(engine_id, job_id):
-    engine = Engine.query.get(engine_id)
+    engine = Engine.query.filter((Engine.id == engine_id) & (Engine.active == 1)).first()
     r_data = do_get(engine.address,
                     engine.port,
                     "/jobs/" + job_id + "/restart",
@@ -559,7 +559,7 @@ def restart_job(engine_id, job_id):
 @validate
 @api_authenticated
 def stop_job(engine_id, job_id):
-    engine = Engine.query.get(engine_id)
+    engine = Engine.query.filter((Engine.id == engine_id) & (Engine.active == 1)).first()
     r_data = do_get(engine.address,
                     engine.port,
                     "/jobs/" + job_id + "/stop",

@@ -49,11 +49,10 @@
         <div id="navbar" class="collapse navbar-collapse">
           <ul class="nav navbar-nav">
             <li class="main-menu-item active" id="main_jobs"><a href="#jobs">Jobs</a></li>
+            <li class="main-menu-item" id="main_issues"><a href="#issues">Issues</a></li>
 
             <!-- REMOVING REFERENCE AS THESE ARE WORK IN PROGRESS AND THE NEXT DEV ROUND
                  WILL NOT BE FOCUSING ON THEM AS PRIORITIES HAVE CHANGED.
-
-            <li class="main-menu-item" id="main_issues"><a href="#issues">Issues</a></li>
             <li class="main-menu-item" id="main_parser"><a href="#parser">Parser</a></li>
             -->
 

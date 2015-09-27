@@ -6,9 +6,10 @@ pip install flask-login
 pip install Flask-SQLAlchemy
 pip install Flask-Bcrypt
 
-openssl genrsa -des3 -passout pass:x -out ./ssl/server.pass.key 2048
-openssl rsa -passin pass:x -in ./ssl/server.pass.key -out ./ssl/server.key
-rm ./ssl/server.pass.key
-openssl req -new -key ./ssl/server.key -out ./ssl/server.csr
-openssl x509 -req -days 365 -in ./ssl/server.csr -signkey ./ssl/server.key -out ./ssl/server.crt
+mkdir ./etc/ssl
+openssl genrsa -des3 -passout pass:x -out ./etc/ssl/server.pass.key 2048
+openssl rsa -passin pass:x -in ./etc/ssl/server.pass.key -out ./etc/ssl/server.key
+rm ./etc/ssl/server.pass.key
+openssl req -new -key ./etc/ssl/server.key -out ./etc/ssl/server.csr
+openssl x509 -req -days 365 -in ./etc/ssl/server.csr -signkey ./etc/ssl/server.key -out ./etc/ssl/server.crt
 

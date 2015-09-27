@@ -21,6 +21,7 @@ fuzzlabs_root = None
 # -----------------------------------------------------------------------------
 
 whitelist = {}
+whitelist["id"]       = '^[0-9]*$'
 whitelist["job_id"]   = '^[a-f0-9]{32}$'
 whitelist["datetime"] = '^[0-9]{4}-[0-9]{1,2}-[0-9]{1,2} [0-9]{1,2}:[0-9]{1,2}:[0-9]{1,2}$'
 
@@ -482,6 +483,48 @@ class webserver(threading.Thread):
         r = Response("success", "started").get()
         return r
 
+    # -------------------------------------------------------------------------
+    #
+    # -------------------------------------------------------------------------
+
+    @app.route("/issues", methods=['GET'])
+    @apiheaders
+    @validate
+    def r_issues_get():
+        """
+        Return a list of issue (crashes/warning) IDs and the ID of the job
+        that found the issue. 
+        """
+        r = Response("success", "issues").get()
+        return r
+
+    # -------------------------------------------------------------------------
+    #
+    # -------------------------------------------------------------------------
+
+    @app.route("/issues/<id>", methods=['GET'])
+    @apiheaders
+    @validate
+    def r_issues_get_by_id(id):
+        """
+        Return full data of an issue identified by id.
+        """
+        r = Response("success", "issue").get()
+        return r
+
+    # -------------------------------------------------------------------------
+    # 
+    # -------------------------------------------------------------------------
+    
+    @app.route("/issues/<id>/delete", methods=['GET'])
+    @apiheaders
+    @validate
+    def r_issues_get_by_id(id):
+        """
+        Delete an issue identified by id.
+        """
+        r = Response("success", "deleted").get()
+        return r
 
     # -------------------------------------------------------------------------
     #
