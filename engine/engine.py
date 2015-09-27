@@ -24,7 +24,7 @@ if __name__ == "__main__":
                     )))
 
     try:
-        CONFIG = ch.ConfigurationHandler(ROOT_DIR + "/etc/fuzzlabs.config")
+        CONFIG = ch.ConfigurationHandler(ROOT_DIR + "/etc/engine.config")
     except Exception, ex:
         print "[e] failed to load configuration: %s" % str(ex)
         sys.exit(1)
