@@ -90,6 +90,27 @@ class CollectorDaemon():
     #
     # -------------------------------------------------------------------------
 
+    def handle_deleted_engines(self, engines):
+        to_stop = []
+        for r_engine in self.thread_queue:
+            still_exists = False
+            for c_engine in engines:
+                if r_engine["engine"].address == c_engine.address and \
+                   r_engine["engine"].port == c_engine.port and \
+                   r_engine["engine"].id == c_engine.id:
+                       still_exists = True
+                       break
+            if not still_exists:
+                to_stop.append(r_engine)
+
+        for t_engine in to_stop:
+            t_engine["instance"].stop()
+            self.thread_queue.remove(t_engine)
+
+    # -------------------------------------------------------------------------
+    #
+    # -------------------------------------------------------------------------
+
     def run(self):
         os.setsid()
         os.umask(077)
@@ -109,10 +130,10 @@ class CollectorDaemon():
         while self.running:
             engines = db.query(Engine).filter(Engine.active == 1)
             for engine in engines:
-                syslog.syslog(syslog.LOG_INFO, "Active engine: " + str(engine.name))
                 if self.has_thread(engine):
                     continue
 
+                syslog.syslog(syslog.LOG_INFO, "starting thread for engine: " + str(engine.name))
                 e_thread = et.EngineThread(self.thread_queue, 
                                            self.root,
                                            self.config,
@@ -124,6 +145,8 @@ class CollectorDaemon():
                 })
                 e_thread.start()
             time.sleep(self.config["general"]["engine_check_interval"])
+
+            self.handle_deleted_engines(engines)
 
         syslog.syslog(syslog.LOG_INFO, 'shutting down database thread')
 
