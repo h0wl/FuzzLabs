@@ -149,14 +149,6 @@ int Monitor::isRunning() {
 //
 // ----------------------------------------------------------------------------
 
-struct user_regs_struct Monitor::getRegisters() {
-    return regs;    
-}
-
-// ----------------------------------------------------------------------------
-//
-// ----------------------------------------------------------------------------
-
 int Monitor::start() {
     running = 1;
     int status = 0;
@@ -186,7 +178,6 @@ int Monitor::start() {
         p_status->setPid(child);
         while(running) {
             wait(&status);
-            // ptrace(PTRACE_GETREGS, child, NULL, &regs);
             if (WIFEXITED(status)) {
                 p_status->setState(P_TERM);
                 p_status->setExitCode(WEXITSTATUS(status));
