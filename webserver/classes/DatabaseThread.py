@@ -9,33 +9,9 @@ from sqlalchemy import Column, Integer, String, Text
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import relationship, backref
 
-Base = declarative_base()
-
-# -----------------------------------------------------------------------------
-#
-# -----------------------------------------------------------------------------
-
-class Engine(Base):
-    __tablename__ = 'engines'
-    id        = Column(Integer, primary_key=True)
-    name      = Column(String(32), unique=True)
-    address   = Column(String(255), unique=True)
-    port      = Column(Integer)
-    secret    = Column(String(128))
-    active    = Column(Integer)
-    owner     = Column(String(32))
-
-# -----------------------------------------------------------------------------
-#
-# -----------------------------------------------------------------------------
-
-class Job(Base):
-    __tablename__ = 'jobs'
-    id          = Column(Integer, primary_key=True)
-    engine_id   = Column(Integer)
-    active      = Column(Integer)
-    job_id      = Column(String(32))
-    job_data    = Column(Text)
+from classes.database.Base import Base
+from classes.database.Engine import Engine
+from classes.database.Job import Job
 
 # -----------------------------------------------------------------------------
 #

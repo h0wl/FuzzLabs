@@ -1,5 +1,6 @@
 """
-Manage the sqlite database used to store crash data.
+Manage the sqlite database used to store crash data. Should be updated to use
+SQLAlchemy.
 """
 
 import json
@@ -24,12 +25,13 @@ class DatabaseHandler:
         self.job_id   = job_id
         self.dbinit   = True
 
-        stmt = "CREATE TABLE IF NOT EXISTS crash_details (job_id text, data text)"
-        try:
-            self.cursor.execute(stmt)
-            self.database.commit()
-        except Exception, ex:
-            raise Exception(ex)
+        if job_id:
+            stmt = "CREATE TABLE IF NOT EXISTS crash_details (job_id text, data text)"
+            try:
+                self.cursor.execute(stmt)
+                self.database.commit()
+            except Exception, ex:
+                raise Exception(ex)
 
     # -------------------------------------------------------------------------
     #

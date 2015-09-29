@@ -25,9 +25,12 @@ from sqlalchemy.orm import relationship, backref
 from sqlalchemy import desc
 from OpenSSL import SSL
 from flask.ext.bcrypt import Bcrypt
-from flask.ext.login import UserMixin
-from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy import Column, Integer, String, Text
+
+from classes.database import Base
+from classes.database.User import User
+from classes.database.Engine import Engine
+from classes.database.Job import Job
 
 # -----------------------------------------------------------------------------
 #
@@ -64,56 +67,6 @@ db = SQLAlchemy(app)
 @app.before_first_request
 def init_request():
     db.create_all()
-
-# -----------------------------------------------------------------------------
-#
-# -----------------------------------------------------------------------------
-
-class User(UserMixin, db.Model):
-    __tablename__ = 'users'
-    id        = db.Column(db.Integer, primary_key=True)
-    email     = db.Column(db.String(255), unique=True)
-    username  = db.Column(db.String(32), unique=True)
-    _password = db.Column(db.String(128))
-
-    @hybrid_property
-    def password(self):
-        return self._password
-
-    @password.setter
-    def _set_password(self, plaintext):
-        self._password = bcrypt.generate_password_hash(plaintext)
-
-    def is_correct_password(self, plaintext):
-        if bcrypt.check_password_hash(self._password, plaintext):
-            return True
-        return False
-
-# -----------------------------------------------------------------------------
-#
-# -----------------------------------------------------------------------------
-
-class Engine(db.Model):
-    __tablename__ = 'engines'
-    id        = db.Column(db.Integer, primary_key=True)
-    name      = db.Column(db.String(32), unique=True)
-    address   = db.Column(db.String(255), unique=True)
-    port      = db.Column(db.Integer)
-    secret    = db.Column(db.String(128))
-    active    = db.Column(db.Integer)
-    owner     = db.Column(db.String(32))
-
-# -----------------------------------------------------------------------------
-#
-# -----------------------------------------------------------------------------
-
-class Job(db.Model):
-    __tablename__ = 'jobs'
-    id          = Column(Integer, primary_key=True)
-    engine_id   = Column(Integer)
-    active      = Column(Integer)
-    job_id      = Column(String(32))
-    job_data    = Column(Text)
 
 # -----------------------------------------------------------------------------
 #
@@ -286,7 +239,7 @@ def do_get(address, port, uri, secret, timeout=5):
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User.query.get(user_id)
+    return db.session.query(User).get(user_id)
 
 # -----------------------------------------------------------------------------
 #
@@ -390,7 +343,7 @@ def api_engine():
 @api_authenticated
 def api_engine_delete(id):
     try:
-        engine = Engine.query.filter(Engine.id == id).first()
+        engine = db.session.query(Engine).filter_by(id=id).first()
         if engine:
             db.session.delete(engine)
             db.session.commit()
@@ -423,7 +376,7 @@ def api_engine_delete(id):
 @api_authenticated
 def api_engine_activate(id):
     try:
-        engine = Engine.query.filter(Engine.id == id).first()
+        engine = db.session.query(Engine).filter_by(id=id).first()
         engine.active = 1
         db.session.add(engine)
         db.session.commit()
@@ -448,7 +401,7 @@ def api_engine_activate(id):
 @validate
 @api_authenticated
 def api_engine_jobs():
-    jobs = Job.query.order_by(desc(Job.active))
+    jobs = db.session.query(Job).order_by(desc(Job.active))
 
     if jobs.count() == 0:
         r = Response("success", "No jobs available.").get()
@@ -465,12 +418,12 @@ def api_engine_jobs():
 #
 # -----------------------------------------------------------------------------
 
-@app.route("/api/engine/<engine_id>/job/<job_id>/delete", methods=['GET'])
+@app.route("/api/engine/<id>/job/<job_id>/delete", methods=['GET'])
 @api_headers
 @validate
 @api_authenticated
-def delete_job(engine_id, job_id):
-    engine = Engine.query.get(engine_id)
+def delete_job(id, job_id):
+    engine = db.session.query(Engine).filter_by(id=id).first()
     if engine:
         r_data = do_get(engine.address,
                         engine.port,
@@ -498,12 +451,12 @@ def delete_job(engine_id, job_id):
 #
 # -----------------------------------------------------------------------------
 
-@app.route("/api/engine/<engine_id>/job/<job_id>/pause", methods=['GET'])
+@app.route("/api/engine/<id>/job/<job_id>/pause", methods=['GET'])
 @api_headers
 @validate
 @api_authenticated
-def pause_job(engine_id, job_id):
-    engine = Engine.query.get(engine_id)
+def pause_job(id, job_id):
+    engine = db.session.query(Engine).filter_by(id=id).first()
     if not engine:
         r = Response("error", "Failed to pause job: engine does not exist.").get()
         return r
@@ -524,12 +477,12 @@ def pause_job(engine_id, job_id):
 #
 # -----------------------------------------------------------------------------
 
-@app.route("/api/engine/<engine_id>/job/<job_id>/start", methods=['GET'])
+@app.route("/api/engine/<id>/job/<job_id>/start", methods=['GET'])
 @api_headers
 @validate
 @api_authenticated
-def resume_job(engine_id, job_id):
-    engine = Engine.query.get(engine_id)
+def resume_job(id, job_id):
+    engine = db.session.query(Engine).filter_by(id=id).first()
     if not engine:
         r = Response("error", "Failed to start job: engine does not exist.").get()
         return r
@@ -550,12 +503,12 @@ def resume_job(engine_id, job_id):
 #
 # -----------------------------------------------------------------------------
 
-@app.route("/api/engine/<engine_id>/job/<job_id>/restart", methods=['GET'])
+@app.route("/api/engine/<id>/job/<job_id>/restart", methods=['GET'])
 @api_headers
 @validate
 @api_authenticated
-def restart_job(engine_id, job_id):
-    engine = Engine.query.get(engine_id)
+def restart_job(id, job_id):
+    engine = db.session.query(Engine).filter_by(id=id).first()
     if not engine:
         r = Response("error", "Failed to restart job: engine does not exist.").get()
         return r
@@ -576,12 +529,12 @@ def restart_job(engine_id, job_id):
 #
 # -----------------------------------------------------------------------------
 
-@app.route("/api/engine/<engine_id>/job/<job_id>/stop", methods=['GET'])
+@app.route("/api/engine/<id>/job/<job_id>/stop", methods=['GET'])
 @api_headers
 @validate
 @api_authenticated
-def stop_job(engine_id, job_id):
-    engine = Engine.query.get(engine_id)
+def stop_job(id, job_id):
+    engine = db.session.query(Engine).filter_by(id=id).first()
     if not engine:
         r = Response("error", "Failed to stop job: engine does not exist.").get()
         return r
@@ -636,7 +589,13 @@ def login():
         username = request.form['username']
         password = request.form['password']
 
-        user = User.query.filter_by(email=username).first()
+        user = db.session.query(User).filter_by(email=username).first()
+        if not user:
+            syslog.syslog(syslog.LOG_WARNING,
+                          "invalid login request from %s" %\
+                          request.remote_addr)
+            return render_template('login.tpl')
+
         if user.is_correct_password(password):
             login_user(user)
             syslog.syslog(syslog.LOG_INFO,
@@ -711,10 +670,12 @@ def server_error(e):
 #
 # -----------------------------------------------------------------------------
 
+"""
 @app.errorhandler(500)
 @headers
 def server_error(e):
     return redirect(url_for("root"))
+"""
 
 # -----------------------------------------------------------------------------
 #

@@ -3,7 +3,7 @@
     "session": {
         "sleep_time": 0,
         "restart_sleep_time": 0,
-        "timeout": 10,
+        "timeout": 0.5,
         "skip": 0
     },
     "target": {

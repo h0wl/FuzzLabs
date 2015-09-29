@@ -6,11 +6,13 @@ import syslog
 import psutil
 import threading
 from functools import wraps
+from OpenSSL import SSL
 from flask import request
 from flask import make_response
 from flask import Flask, make_response
 from pydispatch import dispatcher
 from classes import Event as ev
+from classes import DatabaseHandler as db
 
 __version__ = "2.1.0"
 
@@ -416,7 +418,7 @@ class webserver(threading.Thread):
     @validate
     def r_jobs_trash(job_id):
         syslog.syslog(syslog.LOG_INFO,
-                      "trash request received for job: %s" % job_id)
+                      "delete request received for job: %s" % job_id)
         dispatcher.send(signal=ev.Event.EVENT__REQ_ARCHIVES_DELETE,
                         sender="WEBSERVER",
                         data=job_id)
@@ -481,6 +483,29 @@ class webserver(threading.Thread):
                             data=job_id)
 
         r = Response("success", "started").get()
+        return r
+
+    # -------------------------------------------------------------------------
+    #
+    # -------------------------------------------------------------------------
+
+    @app.route("/issues", methods=['GET'])
+    @apiheaders
+    @validate
+    def r_get_issues():
+        data = []
+        r = Response("success", "issues", data).get()
+        return r
+
+    # -------------------------------------------------------------------------
+    #
+    # -------------------------------------------------------------------------
+
+    @app.route("/issues/<id>", methods=['GET'])
+    @apiheaders
+    @validate
+    def r_get_issue_by_id(id):
+        r = Response("success", "issue").get()
         return r
 
     # -------------------------------------------------------------------------
