@@ -20,13 +20,13 @@ class DatabaseHandler:
 
         self.config   = config
         self.root     = root
-        self.database = sqlite3.connect(self.root + "/" + self.config["general"]["crash_db"])
+        self.database = sqlite3.connect(self.root + "/" + self.config["general"]["database"])
         self.cursor   = self.database.cursor()
         self.job_id   = job_id
         self.dbinit   = True
 
         if job_id:
-            stmt = "CREATE TABLE IF NOT EXISTS crash_details (job_id text, data text)"
+            stmt = "CREATE TABLE IF NOT EXISTS issues (job_id text, data text)"
             try:
                 self.cursor.execute(stmt)
                 self.database.commit()
@@ -39,7 +39,7 @@ class DatabaseHandler:
 
     def saveCrashDetails(self, data):
         if not self.dbinit: return False
-        stmt = "INSERT INTO crash_details VALUES (?, ?)"
+        stmt = "INSERT INTO issues VALUES (?, ?)"
         try:
             self.cursor.execute(stmt, (self.job_id, data))
             self.database.commit()
@@ -54,12 +54,12 @@ class DatabaseHandler:
 
     def loadCrashDetails(self):
         if not self.dbinit: return False
-        crash_list = []
-        stmt = "SELECT * FROM crash_details"
+        issue_list = []
+        stmt = "SELECT * FROM issues"
         try:
-            for crash_detail in self.cursor.execute(stmt):
-                crash_list.append(crash_detail)
+            for issue in self.cursor.execute(stmt):
+                issue_list.append(issue)
         except Exception, ex:
             raise Exception(ex)
-        return crash_list
+        return issue_list
 
