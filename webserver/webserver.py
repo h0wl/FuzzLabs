@@ -21,11 +21,8 @@ from flask.ext.login import login_user
 from flask.ext.login import logout_user
 from flask.ext.login import current_user
 from flask.ext.sqlalchemy import SQLAlchemy
-from sqlalchemy.orm import relationship, backref
 from sqlalchemy import desc
 from OpenSSL import SSL
-from flask.ext.bcrypt import Bcrypt
-from sqlalchemy import Column, Integer, String, Text
 
 from classes.database import Base
 from classes.database.User import User
@@ -61,7 +58,6 @@ app = Flask(__name__)
 app.config.from_object(__name__)
 login_manager = LoginManager()
 login_manager.init_app(app)
-bcrypt = Bcrypt(app)
 db = SQLAlchemy(app)
 
 @app.before_first_request
