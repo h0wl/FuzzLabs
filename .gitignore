@@ -3,3 +3,4 @@
 *.pyc
 *.session
 webserver/etc/ssl
+webserver/etc/database/*

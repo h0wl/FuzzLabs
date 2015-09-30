@@ -1,5 +1,7 @@
 #!/usr/bin/python
 
+import sys
+
 import re
 import json
 import time
@@ -59,10 +61,8 @@ app.config.from_object(__name__)
 login_manager = LoginManager()
 login_manager.init_app(app)
 db = SQLAlchemy(app)
-
-@app.before_first_request
-def init_request():
-    db.create_all()
+Base.Base.metadata.create_all(db.engine)
+db.session.commit()
 
 # -----------------------------------------------------------------------------
 #

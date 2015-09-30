@@ -105,6 +105,7 @@ class DatabaseThread(threading.Thread):
             Session = sessionmaker(bind = engine)
             db = Session()
             Base.metadata.create_all(engine)
+            db.commit()
         except Exception, ex:
             syslog.syslog(syslog.LOG_INFO,
                           'collector DB thread failed to connect to database, stopping')
