@@ -626,8 +626,8 @@ def register():
         if u_password_1 != u_password_2:
             return redirect(url_for('register'))
 
-        user = User.query.filter_by(email=email)
-        if user.count() == 0:
+        user = db.session.query(User).filter_by(email=email).first()
+        if not user:
             user = User(email=email, username=u_name, password=u_password_1)
             db.session.add(user)
             db.session.commit()
