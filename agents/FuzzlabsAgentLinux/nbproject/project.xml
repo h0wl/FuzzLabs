@@ -12,11 +12,27 @@
             <sourceRootList/>
             <confList>
                 <confElem>
-                    <name>Debug</name>
+                    <name>Debug-x64</name>
                     <type>1</type>
                 </confElem>
                 <confElem>
-                    <name>Release</name>
+                    <name>Release-x64</name>
+                    <type>1</type>
+                </confElem>
+                <confElem>
+                    <name>Debug-Generic</name>
+                    <type>1</type>
+                </confElem>
+                <confElem>
+                    <name>Release-Generic</name>
+                    <type>1</type>
+                </confElem>
+                <confElem>
+                    <name>Debug-x86</name>
+                    <type>1</type>
+                </confElem>
+                <confElem>
+                    <name>Release-x86</name>
                     <type>1</type>
                 </confElem>
             </confList>

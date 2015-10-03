@@ -27,11 +27,11 @@ CLEAN_SUBPROJECTS=${CLEAN_SUBPROJECTS_${SUBPROJECTS}}
 PROJECTNAME=FuzzlabsAgentLinux
 
 # Active Configuration
-DEFAULTCONF=Debug
+DEFAULTCONF=Debug-x64
 CONF=${DEFAULTCONF}
 
 # All Configurations
-ALLCONFS=Debug Release 
+ALLCONFS=Debug-x64 Release-x64 Debug-Generic Release-Generic Debug-x86 Release-x86 
 
 
 # build

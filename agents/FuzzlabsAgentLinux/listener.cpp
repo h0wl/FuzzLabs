@@ -102,28 +102,21 @@ int handle_command_status(Connection *conn, Monitor *monitor, Message *msg) {
         return(0);
     }
     
-    cJSON *root = cJSON_CreateObject();
-    cJSON_AddStringToObject(root, "command", "status");
-    cJSON_AddStringToObject(root, "data", "terminated");
-    cJSON_AddNumberToObject(root, "process_id", m_status->getPid());
-    cJSON_AddNumberToObject(root, "term_condition", m_status->getState());
-    cJSON_AddNumberToObject(root, "exit_code", m_status->getExitCode());
-    cJSON_AddNumberToObject(root, "signal_num", m_status->getSignalNum());
+    cJSON *j_data = cJSON_CreateObject();
+
+    cJSON_AddStringToObject(j_data, "status", "terminated");
+    cJSON_AddNumberToObject(j_data, "process_id", m_status->getPid());
+    cJSON_AddNumberToObject(j_data, "term_condition", m_status->getState());
+    cJSON_AddNumberToObject(j_data, "exit_code", m_status->getExitCode());
+    cJSON_AddNumberToObject(j_data, "signal_num", m_status->getSignalNum());
     char *signame = (char *)malloc(256);
     m_status->getSignalStr(signame, 256);
-    cJSON_AddStringToObject(root, "signal_str", signame);
-    
-    // Create registers
+    cJSON_AddStringToObject(j_data, "signal_str", signame);
 
-    struct user_regs_struct m_regs = monitor->getRegisters();
-    cJSON *j_regs = cJSON_CreateArray();
+    cJSON *root = cJSON_CreateObject();
+    cJSON_AddStringToObject(root, "command", "status");
+    cJSON_AddItemToObject(root, "data", j_data);
     
-    /*
-    cJSON *j_rax = createRegisterObject("rax", m_regs.rax);
-    cJSON_AddItemToArray(j_regs, j_rax);
-    
-    cJSON_AddItemToObject(root, "registers", j_regs);
-    */
     char *t_json = cJSON_Print(root);
     if (t_json != NULL) conn->transmit(t_json, strlen(t_json));
     
@@ -255,4 +248,3 @@ void listener(unsigned int port, unsigned int max_conn) {
             throw "failed to accept connection";
     }
 }
-

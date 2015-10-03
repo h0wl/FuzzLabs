@@ -30,7 +30,6 @@ private:
     Status *p_status;
     char **p_args;
     char *p_full;
-    struct user_regs_struct regs;
     
     char *getCommandName(char *str);
     char **parseArgs(char *str);
@@ -42,7 +41,6 @@ public:
     int isRunning();
     Status *status();
     int terminate();
-    struct user_regs_struct getRegisters();
 };
 
 #endif	/* MONITOR_H */

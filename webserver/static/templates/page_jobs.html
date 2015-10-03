@@ -1,0 +1,114 @@
+<div class="container" ng-controller="jobsCtrl">
+    <div class="sub_menu">
+        <button id="new_job" disabled>&#x2795; New Job</button>
+    </div>
+    <table class="table table-striped" id="jobs_list">
+        <thead>
+            <tr>
+                <th>Job</th>
+                <th>Transport</th>
+                <th>Endpoint</th>
+                <th>Node</th>
+                <th>Progress</th>
+                <th>Crashes</th>
+                <th>Warnings</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody id="tbody_jobs_list">
+            <tr ng-repeat="job in jobs.data | filter:query">
+                <td ng-show="job.job.name">{{job.job.name}}</td>
+                <td ng-show="!job.job.name">{{job.id}}</td>
+                <td>
+                    <table>
+                        <tr ng-repeat="(key, value) in job.job.target.transport">
+                            <td class="list_key">{{key | capitalize}}:</td><td>{{value}}</td>
+                        </tr>
+                    </table>
+                </td>
+                <td>
+                    <table>
+                        <tr ng-repeat="(key, value) in job.job.target.endpoint">
+                            <td class="list_key">{{key | capitalize}}:</td><td>{{value}}</td>
+                        </tr>
+                    </table>
+                </td>
+                <td ng-show="job.session.name">{{job.session.name}}</td>
+                <td ng-show="!job.session.name">N/A</td>
+                <td class="jobs_col_progbar">
+                    <div ng-if="job.session.state == 'running'">
+                        <progressbar type="danger" id="job_progress" max="job.session.total_num_mutations" value="job.session.total_mutant_index">
+                            <span style="color:black; white-space:nowrap;">
+                                {{job.session.total_mutant_index}} / {{job.session.total_num_mutations}}
+                            </span>
+                        </progressbar>
+                    </div>
+                    <div ng-if="job.session.state == 'finished'">
+                        <progressbar type="success" id="job_progress" max="job.session.total_num_mutations" value="job.session.total_mutant_index">
+                            <span style="color:black; white-space:nowrap;">
+                                FINISHED ({{job.session.total_mutant_index}} / {{job.session.total_num_mutations}})
+                            </span>
+                        </progressbar>
+                    </div>
+                    <div ng-if="job.session.state == 'paused'">
+                        <progressbar type="warning" id="job_progress" max="job.session.total_num_mutations" value="job.session.total_mutant_index">
+                            <span style="color:black; white-space:nowrap;">
+                                PAUSED ({{job.session.total_mutant_index}} / {{job.session.total_num_mutations}})
+                            </span>
+                        </progressbar>
+                    </div>
+                    <div ng-if="job.session.state == 'stopped'">
+                        <progressbar type="warning" id="job_progress" max="job.session.total_num_mutations" value="job.session.total_mutant_index">
+                            <span style="color:black; white-space:nowrap;">
+                                STOPPED ({{job.session.total_mutant_index}} / {{job.session.total_num_mutations}})
+                            </span>
+                        </progressbar>
+                    </div>
+                    <div ng-if="!job.session.state">
+                        <progressbar type="success" id="job_progress" max="" value="">
+                            <span style="color:black; white-space:nowrap;">
+                                {{job.session.total_mutant_index}} / {{job.session.total_num_mutations}}
+                            </span>
+                        </progressbar>
+                    </div>
+                </td>
+                <td>{{job.session.crashes}}</td>
+                <td>{{job.session.warnings}}</td>
+                <td>
+                    <div ng-if="job.session.state == 'running'" id="job_action">
+                        <!-- PAUSE or STOP -->
+                        <button class="job_action" title="Pause Job" engine="{{job.engine}}" job_id="{{job.id}}" id="pause_job">&#9646;&#9646;</button>
+                        <button class="job_action" title="Stop Job" engine="{{job.engine}}" job_id="{{job.id}}" id="stop_job">&#9726;</button>
+                    </div>
+                    <div ng-if="job.session.state == 'finished'" id="job_action">
+                        <!-- RESTARTED or DELETED -->
+                        <button class="job_action" title="Restart Job" engine="{{job.engine}}" job_id="{{job.id}}" id="restart_job">&#x27F3;</button>
+                        <button class="job_action" title="Delete Job" engine="{{job.engine}}" job_id="{{job.id}}" id="delete_job">&#x2718;</button>
+                    </div>
+                    <div ng-if="job.session.state == 'stopped'" id="job_action">
+                        <!-- STARTED, RESTARTED or DELETED -->
+                        <button class="job_action" title="Start Job" engine="{{job.engine}}" job_id="{{job.id}}" id="start_job">&#x25B6;</button>
+                        <button class="job_action" title="Restart Job" engine="{{job.engine}}" job_id="{{job.id}}" id="restart_job">&#x27F3;</button>
+                        <button class="job_action" title="Delete Job" engine="{{job.engine}}" job_id="{{job.id}}" id="delete_job">&#x2718;</button>
+                    </div>
+                    <div ng-if="job.session.state == 'paused'" id="job_action">
+                        <!-- STARTED or STOPPED -->
+                        <button class="job_action" title="Start Job" engine="{{job.engine}}" job_id="{{job.id}}" id="start_job">&#x25B6;</button>
+                    </div>
+                    <div ng-if="job.session != '' && !job.session.state" id="job_action">
+                        <!-- STARTED, RESTARTED or DELETED -->
+                        <button class="job_action" title="Start Job" engine="{{job.engine}}" job_id="{{job.id}}" id="start_job">&#x25B6;</button>
+                        <button class="job_action" title="Restart Job" engine="{{job.engine}}" job_id="{{job.id}}" id="restart_job">&#x27F3;</button>
+                        <button class="job_action" title="Delete Job" engine="{{job.engine}}" job_id="{{job.id}}" id="delete_job">&#x2718;</button>
+                    </div>
+                    <div ng-if="job.session == ''" id="job_action">
+                        <!-- STARTED or DELETED -->
+                        <button class="job_action" title="Start Job" engine="{{job.engine}}" job_id="{{job.id}}" id="start_job">&#x25B6;</button>
+                        <button class="job_action" title="Delete Job" engine="{{job.engine}}" job_id="{{job.id}}" id="delete_job">&#x2718;</button>
+                    </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
